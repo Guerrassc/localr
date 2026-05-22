@@ -15,7 +15,7 @@ Localr automates that. You pick a city and a vibe, and the app does the digging 
 ## How it works
 
 1. Enter a destination city
-2. Pick a vibe, Adventurous, Chill, Foodie, Culture, Nightlife, or Broke Student
+2. Pick a mood, Outdoor, Food & Drink, Culture, Nightlife, or Budget
 3. The app scans Reddit and community platforms for real recommendations
 4. Activities come up as swipeable cards, right to save, left to skip
 5. Each card shows a real quote from an actual post, plus a **Local Score** (how many times a place was organically mentioned)
@@ -27,7 +27,7 @@ Localr automates that. You pick a city and a vibe, and the app does the digging 
 
 - **Human-first sourcing** — every recommendation comes from a real person, not a paid critic
 - **Local Score** — a trust metric based on organic mentions across platforms
-- **Vibe mode** — filters recommendations by the kind of experience you're after
+- **Mood mode** — filters recommendations by the kind of experience you're after
 - **Swipe interface** — fast, fun, feels like browsing should
 - **Real quotes on cards** — you always know where a recommendation came from
 - **Itinerary builder** — turns your saved spots into an actual plan
