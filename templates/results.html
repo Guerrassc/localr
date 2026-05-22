@@ -78,30 +78,34 @@
         }
 
         function showResults() {
-            document.getElementById('swipe-section').style.display = 'none';
-            const savedSection = document.getElementById('saved-section');
-            savedSection.style.display = 'block';
-            const list = document.getElementById('saved-list');
+    document.getElementById('swipe-section').style.display = 'none';
+    const savedSection = document.getElementById('saved-section');
+    savedSection.style.display = 'block';
+    const list = document.getElementById('saved-list');
 
-            if (saved.length === 0) {
-                list.innerHTML = '<p style="color:#888">You skipped everything. Try a different city or mood.</p>';
-                return;
-            }
+    if (saved.length === 0) {
+        list.innerHTML = '<p style="color:#888">You skipped everything. Try a different city or mood.</p>';
+        return;
+    }
 
-            saved.forEach(place => {
-                list.innerHTML += `
-                    <div class="card">
-                        <div class="card-header">
-                            <h2>${place.name}</h2>
-                            <span class="score">${place.score}</span>
-                        </div>
-                        <p class="summary">${place.summary}</p>
+    const city = document.querySelector('h1').textContent;
+
+    saved.forEach(place => {
+        list.innerHTML += `
+            <a href="/place?name=${encodeURIComponent(place.name)}&city=${encodeURIComponent(city)}" class="card-link">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>${place.name}</h2>
+                        <span class="score">${place.score}</span>
                     </div>
-                `;
-            });
-        }
-
-        showCard(0);
+                    <p class="summary">${place.summary}</p>
+                    <span class="detail-link">View details →</span>
+                </div>
+            </a>
+        `;
+    });
+}
+showCard(0);
     </script>
 </body>
 </html>

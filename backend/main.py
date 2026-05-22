@@ -79,5 +79,57 @@ def search():
 
     return render_template("results.html", city=city, mood=mood, recommendations=recommendations)
 
+def get_place_details(name, city):
+    url = "https://api.groq.com/openai/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    prompt = f"""You are a local travel expert. Give detailed information about "{name}" in {city}.
+
+Return ONLY a JSON object with these fields:
+- "name": full name of the place
+- "description": 2-3 sentence description
+- "price": estimated cost per person (e.g. "Free", "€5-10", "€20-30")
+- "location": neighborhood or address
+- "hours": opening hours if known, otherwise "Check locally"
+- "reviews": array of 3 short realistic reviews someone might post online, each under 20 words
+
+Example:
+{{
+  "name": "LX Factory",
+  "description": "A repurposed industrial complex hosting independent shops, restaurants and a Sunday market. One of Lisbon's most creative spaces.",
+  "price": "Free entry, €10-20 for food",
+  "location": "Alcântara, near the 25 de Abril Bridge",
+  "hours": "Tuesday to Sunday, 12pm - midnight",
+  "reviews": [
+    "the sunday market here is absolutely worth waking up early for",
+    "best collection of independent shops in lisbon by far",
+    "go for brunch and stay for the afternoon, you won't regret it"
+  ]
+}}
+
+Return only the JSON object, nothing else."""
+
+    data = {
+        "model": "llama-3.3-70b-versatile",
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.7
+    }
+    response = requests.post(url, headers=headers, json=data)
+    result = response.json()
+    return result["choices"][0]["message"]["content"]
+
+@app.route("/place")
+def place():
+    name = request.args.get("name")
+    city = request.args.get("city")
+    details_raw = get_place_details(name, city)
+    try:
+        details = json.loads(details_raw)
+    except:
+        details = {"name": name, "description": "No details found.", "price": "Unknown", "location": "Unknown", "hours": "Unknown", "reviews": []}
+    return render_template("place.html", details=details, city=city)
+
 if __name__ == "__main__":
     app.run(debug=True)

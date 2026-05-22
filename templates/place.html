@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ details.name }} — Localr</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back">← New search</a>
+
+        <h1>{{ details.name }}</h1>
+        <p class="tagline">{{ city }}</p>
+
+        <div class="detail-grid">
+            <div class="detail-card">
+                <p class="detail-description">{{ details.description }}</p>
+
+                <div class="detail-meta">
+                    <div class="meta-item">
+                        <span class="meta-label">Price</span>
+                        <span class="meta-value">{{ details.price }}</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Location</span>
+                        <span class="meta-value">{{ details.location }}</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Hours</span>
+                        <span class="meta-value">{{ details.hours }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="reviews-section">
+                <h2>What people are saying</h2>
+                {% for review in details.reviews %}
+                <blockquote class="review">"{{ review }}"</blockquote>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>
