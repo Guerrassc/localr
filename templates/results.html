@@ -12,24 +12,96 @@
         <h1>{{ city }}</h1>
         <p class="tagline">{{ mood }} picks from the community</p>
 
-        <div class="cards">
-            {% for place in recommendations %}
-            <div class="card">
-                <div class="card-header">
-                    <h2>{{ place.name }}</h2>
-                    <span class="score">{{ place.score }} mentions</span>
+        <div id="swipe-section">
+            <div id="card-stack">
+                {% for place in recommendations %}
+                <div class="card" data-index="{{ loop.index0 }}">
+                    <div class="card-header">
+                        <h2>{{ place.name }}</h2>
+                        <span class="score">{{ place.score }} mentions</span>
+                    </div>
+                    <p class="summary">{{ place.summary }}</p>
+                    <blockquote>"{{ place.quote }}"</blockquote>
                 </div>
-                <p class="summary">{{ place.summary }}</p>
-                <blockquote>"{{ place.quote }}"</blockquote>
+                {% endfor %}
             </div>
-            {% endfor %}
 
-            {% if not recommendations %}
-            <p>Nothing came back — try a different city or mood.</p>
-            {% endif %}
+            <div id="swipe-buttons">
+                <button class="skip-btn" onclick="skip()">Skip</button>
+                <button class="save-btn" onclick="save()">Save</button>
+            </div>
+
+            <p id="card-counter"></p>
         </div>
 
-        <a href="/" class="back">← New search</a>
+        <div id="saved-section" style="display:none;">
+            <h2>Saved places</h2>
+            <div id="saved-list"></div>
+            <a href="/" class="back" style="margin-top: 32px; display:inline-block;">← New search</a>
+        </div>
     </div>
+
+    <script>
+        const cards = document.querySelectorAll('.card');
+        let current = 0;
+        const saved = [];
+
+        function showCard(index) {
+            cards.forEach((c, i) => {
+                c.style.display = i === index ? 'block' : 'none';
+            });
+            document.getElementById('card-counter').textContent = 
+                `${index + 1} of ${cards.length}`;
+        }
+
+        function save() {
+            const card = cards[current];
+            saved.push({
+                name: card.querySelector('h2').textContent,
+                summary: card.querySelector('.summary').textContent,
+                score: card.querySelector('.score').textContent
+            });
+            next();
+        }
+
+        function skip() {
+            next();
+        }
+
+        function next() {
+            current++;
+            if (current < cards.length) {
+                showCard(current);
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            document.getElementById('swipe-section').style.display = 'none';
+            const savedSection = document.getElementById('saved-section');
+            savedSection.style.display = 'block';
+            const list = document.getElementById('saved-list');
+
+            if (saved.length === 0) {
+                list.innerHTML = '<p style="color:#888">You skipped everything. Try a different city or mood.</p>';
+                return;
+            }
+
+            saved.forEach(place => {
+                list.innerHTML += `
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>${place.name}</h2>
+                            <span class="score">${place.score}</span>
+                        </div>
+                        <p class="summary">${place.summary}</p>
+                    </div>
+                `;
+            });
+        }
+
+        showCard(0);
+    </script>
 </body>
 </html>

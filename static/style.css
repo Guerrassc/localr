@@ -159,3 +159,50 @@ blockquote {
 .back:hover {
     color: #f0f0f0;
 }
+#swipe-buttons {
+    display: flex;
+    gap: 16px;
+    margin-top: 32px;
+}
+
+.skip-btn {
+    background: transparent;
+    color: #888;
+    border: 1px solid #2a2a2a;
+    padding: 14px 40px;
+    font-size: 1rem;
+    font-family: 'Georgia', serif;
+    cursor: pointer;
+    transition: all 0.2s;
+    align-self: flex-start;
+}
+
+.skip-btn:hover {
+    border-color: #555;
+    color: #ccc;
+}
+
+.save-btn {
+    background: #f0f0f0;
+    color: #0f0f0f;
+    border: none;
+    padding: 14px 40px;
+    font-size: 1rem;
+    font-family: 'Georgia', serif;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.save-btn:hover {
+    background: #ccc;
+}
+
+#card-counter {
+    color: #555;
+    font-size: 0.85rem;
+    margin-top: 16px;
+}
+
+#saved-section h2 {
+    margin-bottom: 24px;
+}
