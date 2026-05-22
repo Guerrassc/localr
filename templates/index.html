@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Localr</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Localr</h1>
+        <p class="tagline">Real recommendations from real people.</p>
+
+        <form action="/search" method="POST">
+            <input 
+                type="text" 
+                name="city" 
+                placeholder="Enter a city..." 
+                required
+            />
+
+            <div class="mood-grid">
+                <label>
+                    <input type="radio" name="mood" value="Outdoor" required>
+                    <span>Outdoor</span>
+                </label>
+                <label>
+                    <input type="radio" name="mood" value="Food & Drink">
+                    <span>Food & Drink</span>
+                </label>
+                <label>
+                    <input type="radio" name="mood" value="Culture">
+                    <span>Culture</span>
+                </label>
+                <label>
+                    <input type="radio" name="mood" value="Nightlife">
+                    <span>Nightlife</span>
+                </label>
+                <label>
+                    <input type="radio" name="mood" value="Budget">
+                    <span>Budget</span>
+                </label>
+            </div>
+
+            <button type="submit">Find places</button>
+        </form>
+    </div>
+</body>
+</html>
