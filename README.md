@@ -1,6 +1,6 @@
 # Localr
 
-A travel app that surfaces hidden gem activities by reading what real people say on Reddit, Quora, and other community platforms — not what paid reviewers or sponsored listicles want you to see.
+A travel app that surfaces hidden gem activities by reading what real people say on Reddit, Quora, and other community platforms, not what paid reviewers or sponsored listicles want you to see.
 
 ---
 
@@ -15,9 +15,9 @@ Localr automates that. You pick a city and a vibe, and the app does the digging 
 ## How it works
 
 1. Enter a destination city
-2. Pick a vibe — Adventurous, Chill, Foodie, Culture, Nightlife, or Broke Student
+2. Pick a vibe, Adventurous, Chill, Foodie, Culture, Nightlife, or Broke Student
 3. The app scans Reddit and community platforms for real recommendations
-4. Activities come up as swipeable cards — right to save, left to skip
+4. Activities come up as swipeable cards, right to save, left to skip
 5. Each card shows a real quote from an actual post, plus a **Local Score** (how many times a place was organically mentioned)
 6. Saved activities can be turned into a day-by-day itinerary
 
@@ -67,4 +67,4 @@ Just getting started. Following the build from scratch, documenting everything a
 
 ## Why "Localr"
 
-Short for local recommender. The missing e is intentional — Tumblr, Flickr, you know the vibe.
+Short for local recommender. The missing e is intentional, Tumblr, Flickr, inspiration.
