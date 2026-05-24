@@ -190,6 +190,20 @@ def get_place_images(name, city):
         })
     return images
 
+def get_coordinates(name, city):
+    url = "https://nominatim.openstreetmap.org/search"
+    params = {
+        "q": f"{name}, {city}",
+        "format": "json",
+        "limit": 1
+    }
+    headers = {"User-Agent": "localr-app"}
+    response = requests.get(url, headers=headers, params=params)
+    data = response.json()
+    if data:
+        return {"lat": float(data[0]["lat"]), "lon": float(data[0]["lon"])}
+    return None
+
 # --- Routes ---
 
 @app.route("/")
@@ -224,16 +238,19 @@ def save_place():
 @login_required
 def saved():
     places = SavedPlace.query.filter_by(user_id=current_user.id).all()
-    return render_template("saved.html", places=places)
-
-@app.route("/saved/delete/<int:place_id>", methods=["POST"])
-@login_required
-def delete_place(place_id):
-    place = SavedPlace.query.get_or_404(place_id)
-    if place.user_id == current_user.id:
-        db.session.delete(place)
-        db.session.commit()
-    return redirect(url_for("saved"))
+    places_with_coords = []
+    for place in places:
+        coords = get_coordinates(place.name, place.city)
+        places_with_coords.append({
+            "id": place.id,
+            "name": place.name,
+            "summary": place.summary,
+            "score": place.score,
+            "city": place.city,
+            "lat": coords["lat"] if coords else None,
+            "lon": coords["lon"] if coords else None
+        })
+    return render_template("saved.html", places=places_with_coords)
 
 @app.route("/itinerary")
 @login_required
