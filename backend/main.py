@@ -62,9 +62,9 @@ def ask_groq(content, city, mood):
         "Content-Type": "application/json"
     }
     prompt = f"""You are a local travel expert. Based on the following content about {city}, 
-extract exactly 5 specific activity recommendations that match a '{mood}' experience.
+extract exactly 10 specific activity recommendations that match a '{mood}' experience.
 
-Return ONLY a JSON array with exactly 5 objects. Each object must have:
+Return ONLY a JSON array with exactly 10 objects. Each object must have:
 - "name": name of the place or activity
 - "summary": one sentence description
 - "quote": a realistic quote someone might say about this place
@@ -156,6 +156,40 @@ Spread the places across days logically. Return only the JSON array, nothing els
     result = response.json()
     return result["choices"][0]["message"]["content"]
 
+def get_place_images(name, city):
+    UNSPLASH_ACCESS_KEY = os.getenv("UNSPLASH_ACCESS_KEY")
+    url = "https://api.unsplash.com/search/photos"
+    headers = {"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"}
+    
+    # Try specific place name first
+    params = {"query": name, "per_page": 5, "orientation": "landscape"}
+    response = requests.get(url, headers=headers, params=params)
+    data = response.json()
+    results = data.get("results", [])
+    
+    # If less than 2 results, try place + city
+    if len(results) < 2:
+        params["query"] = f"{name} {city}"
+        response = requests.get(url, headers=headers, params=params)
+        data = response.json()
+        results = data.get("results", [])
+    
+    # If still nothing, fall back to city travel photos
+    if len(results) < 2:
+        params["query"] = f"{city} travel food restaurant"
+        response = requests.get(url, headers=headers, params=params)
+        data = response.json()
+        results = data.get("results", [])
+    
+    images = []
+    for photo in results[:5]:
+        images.append({
+            "url": photo["urls"]["regular"],
+            "credit": photo["user"]["name"],
+            "credit_link": photo["user"]["links"]["html"]
+        })
+    return images
+
 # --- Routes ---
 
 @app.route("/")
@@ -224,7 +258,18 @@ def place():
         details = json.loads(details_raw)
     except:
         details = {"name": name, "description": "No details found.", "price": "Unknown", "location": "Unknown", "hours": "Unknown", "reviews": []}
-    return render_template("place.html", details=details, city=city)
+    images = get_place_images(name, city)
+    return render_template("place.html", details=details, city=city, images=images)
+
+@app.route("/images")
+def images():
+    name = request.args.get("name")
+    city = request.args.get("city")
+    mood = request.args.get("mood", "")
+    imgs = get_place_images(name, city)
+    if len(imgs) < 2:
+        imgs = get_place_images(mood, city)
+    return {"images": imgs}
 
 @app.route("/register", methods=["GET", "POST"])
 def register():

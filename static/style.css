@@ -404,3 +404,254 @@ blockquote {
 .nav-links a:hover {
     color: #f0f0f0;
 }
+
+#card-wrap {
+    position: relative;
+    cursor: grab;
+}
+
+#card-wrap:active {
+    cursor: grabbing;
+}
+
+.swipe-card {
+    user-select: none;
+    will-change: transform;
+}
+
+.swipe-hint {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+
+.hint-skip, .hint-save {
+    font-size: 0.85rem;
+    opacity: 0;
+    transition: opacity 0.1s;
+}
+
+.hint-skip {
+    color: #e05555;
+}
+
+.hint-save {
+    color: #55e07a;
+}
+
+.tap-hint {
+    color: #444;
+    font-size: 0.8rem;
+    margin-top: 16px;
+    text-align: center;
+}
+
+#drawer-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 100;
+}
+
+#drawer-overlay.open {
+    display: block;
+}
+
+#drawer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #141414;
+    border-top: 1px solid #2a2a2a;
+    padding: 32px 24px;
+    z-index: 101;
+    max-height: 85vh;
+    overflow-y: auto;
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+#drawer.open {
+    transform: translateY(0);
+}
+
+#drawer-close {
+    position: absolute;
+    top: 16px;
+    right: 20px;
+    background: transparent;
+    border: none;
+    color: #555;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 4px 8px;
+    align-self: auto;
+}
+
+#drawer-close:hover {
+    color: #f0f0f0;
+    background: transparent;
+}
+
+.drawer-img {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    margin-bottom: 24px;
+    display: block;
+}
+
+#drawer-swipe-buttons {
+    display: flex;
+    gap: 16px;
+    margin-top: 32px;
+}
+
+.drawer-credit {
+    color: #444;
+    font-size: 0.75rem;
+    margin-top: 12px;
+}
+
+.drawer-credit a {
+    color: #555;
+    text-decoration: none;
+}
+
+.drawer-credit a:hover {
+    color: #888;
+}
+
+.drawer-loading {
+    color: #555;
+    font-size: 0.9rem;
+    margin-top: 16px;
+}
+
+#expand-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 100;
+}
+
+#expand-overlay.open {
+    display: block;
+}
+
+#expanded-card {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.92);
+    width: 90%;
+    max-width: 620px;
+    max-height: 82vh;
+    overflow-y: auto;
+    background: #141414;
+    border: 1px solid #2a2a2a;
+    padding: 28px;
+    z-index: 101;
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease;
+}
+
+#expanded-card.open {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+    pointer-events: all;
+}
+
+#expand-close {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    background: transparent;
+    border: none;
+    color: #555;
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 4px 8px;
+    align-self: auto;
+}
+
+#expand-close:hover {
+    color: #f0f0f0;
+    background: transparent;
+}
+
+#gallery-wrap {
+    margin-bottom: 24px;
+    position: relative;
+}
+
+.gallery-img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    display: block;
+}
+
+.gallery-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0,0,0,0.5);
+    color: #f0f0f0;
+    border: none;
+    padding: 8px 14px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+    z-index: 10;
+    margin-top: -15px;
+}
+
+#gallery-wrap:hover .gallery-arrow {
+    opacity: 1;
+}
+
+.gallery-arrow-left {
+    left: 0;
+}
+
+.gallery-arrow-right {
+    right: 0;
+}
+
+#gallery-dots {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.gallery-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #333;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.gallery-dot.active {
+    background: #f0f0f0;
+}
+
+#expand-buttons {
+    display: flex;
+    gap: 16px;
+    margin-top: 24px;
+}
+
+#expand-loading {
+    color: #555;
+    font-size: 0.9rem;
+    padding: 16px 0;
+}

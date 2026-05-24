@@ -5,30 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ city }} — Localr</title>
     <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
 </head>
 <body>
     <div class="container">
         <a href="/" class="back">← New search</a>
-        <h1>{{ city }}</h1>
+        <h1 data-mood="{{ mood }}">{{ city }}</h1>
         <p class="tagline">{{ mood }} picks from the community</p>
 
         <div id="swipe-section">
-            <div id="card-stack">
+            <div id="card-wrap">
                 {% for place in recommendations %}
-                <div class="card" data-index="{{ loop.index0 }}">
+                <div class="card swipe-card" data-index="{{ loop.index0 }}" data-name="{{ place.name }}" style="display:none;">
                     <div class="card-header">
                         <h2>{{ place.name }}</h2>
                         <span class="score">{{ place.score }} mentions</span>
                     </div>
                     <p class="summary">{{ place.summary }}</p>
                     <blockquote>"{{ place.quote }}"</blockquote>
+                    <p class="tap-hint">Tap card for details</p>
+                    <div class="swipe-hint">
+                        <span class="hint-skip">← Skip</span>
+                        <span class="hint-save">Save →</span>
+                    </div>
                 </div>
                 {% endfor %}
             </div>
 
             <div id="swipe-buttons">
-                <button class="skip-btn" onclick="skip()">Skip</button>
-                <button class="save-btn" onclick="save()">Save</button>
+                <button class="skip-btn" onclick="animateAndSkip()">Skip</button>
+                <button class="save-btn" onclick="animateAndSave()">Save</button>
             </div>
 
             <p id="card-counter"></p>
@@ -41,40 +47,81 @@
         </div>
     </div>
 
+    <!-- Expanded card overlay -->
+    <div id="expand-overlay" onclick="collapseCard()"></div>
+    <div id="expanded-card">
+        <button id="expand-close" onclick="collapseCard()">✕</button>
+
+        <div id="gallery-wrap">
+            <button class="gallery-arrow gallery-arrow-left" onclick="goToImage(galleryIndex - 1)">&#8592;</button>
+            <div id="gallery"></div>
+            <button class="gallery-arrow gallery-arrow-right" onclick="goToImage(galleryIndex + 1)">&#8594;</button>
+            <div id="gallery-dots"></div>
+        </div>
+
+        <div id="expand-content">
+            <div id="expand-loading">Loading...</div>
+        </div>
+
+        <div id="expand-buttons">
+            <button class="skip-btn" onclick="collapseAndSkip()">Skip</button>
+            <button class="save-btn" onclick="collapseAndSave()">Save</button>
+        </div>
+
+        <p class="drawer-credit" id="expand-credit"></p>
+    </div>
+
     <script>
-        const cards = document.querySelectorAll('.card');
+        const cards = document.querySelectorAll('.swipe-card');
         let current = 0;
         const saved = [];
+        const cityName = document.querySelector('h1').textContent;
+        const moodName = document.querySelector('h1').dataset.mood;
+        let dragging = false;
+        let galleryIndex = 0;
+        let galleryImages = [];
+        const detailsCache = {};
 
         function showCard(index) {
             cards.forEach((c, i) => {
                 c.style.display = i === index ? 'block' : 'none';
+                c.style.transform = '';
+                c.style.opacity = '1';
+                c.style.transition = '';
             });
-            document.getElementById('card-counter').textContent = 
+            document.getElementById('card-counter').textContent =
                 `${index + 1} of ${cards.length}`;
         }
 
+        function animateOut(direction, callback) {
+            const card = cards[current];
+            const x = direction === 'right' ? 600 : -600;
+            card.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+            card.style.transform = `translateX(${x}px) rotate(${direction === 'right' ? 15 : -15}deg)`;
+            card.style.opacity = '0';
+            setTimeout(callback, 300);
+        }
+
+        function animateAndSave() { animateOut('right', save); }
+        function animateAndSkip() { animateOut('left', skip); }
+
         function save() {
-    const card = cards[current];
-    const name = card.querySelector('h2').textContent;
-    const summary = card.querySelector('.summary').textContent;
-    const score = card.querySelector('.score').textContent;
-    const city = document.querySelector('h1').textContent;
+            const card = cards[current];
+            const name = card.querySelector('h2').textContent;
+            const summary = card.querySelector('.summary').textContent;
+            const score = card.querySelector('.score').textContent;
 
-    fetch('/save', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: `name=${encodeURIComponent(name)}&summary=${encodeURIComponent(summary)}&score=${encodeURIComponent(score)}&city=${encodeURIComponent(city)}`
-    });
+            fetch('/save', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: `name=${encodeURIComponent(name)}&summary=${encodeURIComponent(summary)}&score=${encodeURIComponent(score)}&city=${encodeURIComponent(cityName)}`
+            });
 
-    saved.push({ name, summary, score });
-    next();
-}
-        
-
-        function skip() {
+            saved.push({ name, summary, score });
             next();
         }
+
+        function skip() { next(); }
 
         function next() {
             current++;
@@ -85,35 +132,188 @@
             }
         }
 
+        function expandCard() {
+            const card = cards[current];
+            const name = card.dataset.name;
+
+            document.getElementById('expand-content').innerHTML = '<div id="expand-loading">Loading...</div>';
+            document.getElementById('gallery').innerHTML = '';
+            document.getElementById('gallery-dots').innerHTML = '';
+            document.getElementById('expand-credit').innerHTML = '';
+            galleryImages = [];
+            galleryIndex = 0;
+
+            document.getElementById('expanded-card').classList.add('open');
+            document.getElementById('expand-overlay').classList.add('open');
+
+            // Fetch images
+            fetch(`/images?name=${encodeURIComponent(name)}&city=${encodeURIComponent(cityName)}&mood=${encodeURIComponent(moodName)}`)
+                .then(r => r.json())
+                .then(data => {
+                    galleryImages = data.images || [];
+                    const gallery = document.getElementById('gallery');
+                    const dots = document.getElementById('gallery-dots');
+                    gallery.innerHTML = '';
+                    dots.innerHTML = '';
+
+                    if (galleryImages.length > 0) {
+                        galleryImages.forEach((img, i) => {
+                            const el = document.createElement('img');
+                            el.src = img.url;
+                            el.className = 'gallery-img';
+                            el.style.display = i === 0 ? 'block' : 'none';
+                            gallery.appendChild(el);
+
+                            const dot = document.createElement('span');
+                            dot.className = 'gallery-dot' + (i === 0 ? ' active' : '');
+                            dot.onclick = () => goToImage(i);
+                            dots.appendChild(dot);
+                        });
+
+                        updateCredit(0);
+
+                        const galleryHammer = new Hammer(document.getElementById('gallery'));
+                        galleryHammer.on('swipeleft', () => goToImage(galleryIndex + 1));
+                        galleryHammer.on('swiperight', () => goToImage(galleryIndex - 1));
+                    }
+                });
+
+            // Fetch details with cache
+            if (detailsCache[name]) {
+                const content = document.getElementById('expand-content');
+                content.innerHTML = '';
+                if (detailsCache[name].details) content.appendChild(detailsCache[name].details.cloneNode(true));
+                if (detailsCache[name].reviews) content.appendChild(detailsCache[name].reviews.cloneNode(true));
+            } else {
+                fetch(`/place?name=${encodeURIComponent(name)}&city=${encodeURIComponent(cityName)}`)
+                    .then(r => r.text())
+                    .then(html => {
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        const details = doc.querySelector('.detail-card');
+                        const reviews = doc.querySelector('.reviews-section');
+                        detailsCache[name] = { details, reviews };
+                        const content = document.getElementById('expand-content');
+                        content.innerHTML = '';
+                        if (details) content.appendChild(details.cloneNode(true));
+                        if (reviews) content.appendChild(reviews.cloneNode(true));
+                    });
+            }
+        }
+
+        function goToImage(index) {
+            if (index < 0 || index >= galleryImages.length) return;
+            const imgs = document.querySelectorAll('.gallery-img');
+            const dots = document.querySelectorAll('.gallery-dot');
+            imgs[galleryIndex].style.display = 'none';
+            dots[galleryIndex].classList.remove('active');
+            galleryIndex = index;
+            imgs[galleryIndex].style.display = 'block';
+            dots[galleryIndex].classList.add('active');
+            updateCredit(galleryIndex);
+        }
+
+        function updateCredit(index) {
+            if (galleryImages[index]) {
+                document.getElementById('expand-credit').innerHTML =
+                    `Photo by <a href="${galleryImages[index].credit_link}?utm_source=localr&utm_medium=referral" target="_blank">${galleryImages[index].credit}</a> on <a href="https://unsplash.com?utm_source=localr&utm_medium=referral" target="_blank">Unsplash</a>`;
+            }
+        }
+
+        function collapseCard() {
+            document.getElementById('expanded-card').classList.remove('open');
+            document.getElementById('expand-overlay').classList.remove('open');
+        }
+
+        function collapseAndSave() {
+            collapseCard();
+            setTimeout(animateAndSave, 200);
+        }
+
+        function collapseAndSkip() {
+            collapseCard();
+            setTimeout(animateAndSkip, 200);
+        }
+
+        cards.forEach(card => {
+            card.addEventListener('click', () => {
+                if (!dragging) expandCard();
+            });
+        });
+
+        const wrap = document.getElementById('card-wrap');
+        const hammer = new Hammer(wrap);
+        hammer.get('pan').set({ direction: Hammer.DIRECTION_HORIZONTAL });
+        hammer.get('swipe').set({ direction: Hammer.DIRECTION_HORIZONTAL, threshold: 10, velocity: 0.3 });
+
+        hammer.on('swiperight', () => { dragging = false; animateAndSave(); });
+        hammer.on('swipeleft', () => { dragging = false; animateAndSkip(); });
+
+        hammer.on('panstart', () => { dragging = true; });
+        hammer.on('pan', (e) => {
+            const card = cards[current];
+            if (!card) return;
+            card.style.transition = 'none';
+            card.style.transform = `translateX(${e.deltaX}px) rotate(${e.deltaX * 0.05}deg)`;
+            if (e.deltaX > 0) {
+                card.querySelector('.hint-save').style.opacity = Math.min(e.deltaX / 100, 1);
+                card.querySelector('.hint-skip').style.opacity = 0;
+            } else {
+                card.querySelector('.hint-skip').style.opacity = Math.min(-e.deltaX / 100, 1);
+                card.querySelector('.hint-save').style.opacity = 0;
+            }
+        });
+
+        hammer.on('panend', (e) => {
+            const card = cards[current];
+            if (!card) return;
+            card.querySelector('.hint-save').style.opacity = 0;
+            card.querySelector('.hint-skip').style.opacity = 0;
+            if (e.deltaX > 100) {
+                animateAndSave();
+            } else if (e.deltaX < -100) {
+                animateAndSkip();
+            } else {
+                card.style.transition = 'transform 0.3s ease';
+                card.style.transform = '';
+            }
+            setTimeout(() => { dragging = false; }, 100);
+        });
+
+        const expandEl = document.getElementById('expanded-card');
+        const expandHammer = new Hammer(expandEl);
+        expandHammer.get('swipe').set({ direction: Hammer.DIRECTION_HORIZONTAL });
+        expandHammer.on('swiperight', () => collapseAndSave());
+        expandHammer.on('swipeleft', () => collapseAndSkip());
+
         function showResults() {
-    document.getElementById('swipe-section').style.display = 'none';
-    const savedSection = document.getElementById('saved-section');
-    savedSection.style.display = 'block';
-    const list = document.getElementById('saved-list');
+            document.getElementById('swipe-section').style.display = 'none';
+            const savedSection = document.getElementById('saved-section');
+            savedSection.style.display = 'block';
+            const list = document.getElementById('saved-list');
 
-    if (saved.length === 0) {
-        list.innerHTML = '<p style="color:#888">You skipped everything. Try a different city or mood.</p>';
-        return;
-    }
+            if (saved.length === 0) {
+                list.innerHTML = '<p style="color:#888">You skipped everything. Try a different city or mood.</p>';
+                return;
+            }
 
-    const city = document.querySelector('h1').textContent;
+            saved.forEach(place => {
+                list.innerHTML += `
+                    <a href="/place?name=${encodeURIComponent(place.name)}&city=${encodeURIComponent(cityName)}" class="card-link">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2>${place.name}</h2>
+                                <span class="score">${place.score}</span>
+                            </div>
+                            <p class="summary">${place.summary}</p>
+                            <span class="detail-link">View details →</span>
+                        </div>
+                    </a>
+                `;
+            });
+        }
 
-    saved.forEach(place => {
-        list.innerHTML += `
-            <a href="/place?name=${encodeURIComponent(place.name)}&city=${encodeURIComponent(city)}" class="card-link">
-                <div class="card">
-                    <div class="card-header">
-                        <h2>${place.name}</h2>
-                        <span class="score">${place.score}</span>
-                    </div>
-                    <p class="summary">${place.summary}</p>
-                    <span class="detail-link">View details →</span>
-                </div>
-            </a>
-        `;
-    });
-}
-showCard(0);
+        showCard(0);
     </script>
 </body>
 </html>
