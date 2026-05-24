@@ -8,9 +8,22 @@
 </head>
 <body>
     <div class="container">
-        <h1>Localr</h1>
-        <p class="tagline">Real recommendations from real people.</p>
+    <div class="nav">
+        <span></span>
+        <div class="nav-links">
+            {% if current_user.is_authenticated %}
+                <a href="/saved">Saved</a>
+                <a href="/logout">Log out</a>
+            {% else %}
+                <a href="/login">Log in</a>
+                <a href="/register">Register</a>
+            {% endif %}
+        </div>
+    </div>
 
+    <h1>Localr</h1>
+    <p class="tagline">Real recommendations from real people.</p>
+        
         <form action="/search" method="POST">
             <input 
                 type="text" 

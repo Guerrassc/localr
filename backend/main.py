@@ -1,7 +1,10 @@
 import os
 import requests
 import json
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect, url_for, session
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
@@ -10,6 +13,35 @@ load_dotenv()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 app = Flask(__name__, template_folder="../templates", static_folder="../static")
+app.secret_key = "localr-secret-key-change-this-later"
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///localr.db"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+db = SQLAlchemy(app)
+login_manager = LoginManager(app)
+login_manager.login_view = "login"
+
+# --- Models ---
+
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password = db.Column(db.String(200), nullable=False)
+    saved_places = db.relationship("SavedPlace", backref="user", lazy=True)
+
+class SavedPlace(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    summary = db.Column(db.Text, nullable=False)
+    score = db.Column(db.String(50), nullable=False)
+    city = db.Column(db.String(100), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+# --- AI Functions ---
 
 def search_reddit(city, mood):
     query = f"{city} hidden gems {mood} things to do site:reddit.com"
@@ -61,24 +93,6 @@ Return only the JSON array, nothing else."""
     result = response.json()
     return result["choices"][0]["message"]["content"]
 
-@app.route("/", methods=["GET"])
-def index():
-    return render_template("index.html")
-
-@app.route("/search", methods=["POST"])
-def search():
-    city = request.form.get("city")
-    mood = request.form.get("mood")
-    raw = search_reddit(city, mood)
-    recommendations_raw = ask_groq(raw, city, mood)
-
-    try:
-        recommendations = json.loads(recommendations_raw)
-    except:
-        recommendations = []
-
-    return render_template("results.html", city=city, mood=mood, recommendations=recommendations)
-
 def get_place_details(name, city):
     url = "https://api.groq.com/openai/v1/chat/completions"
     headers = {
@@ -95,20 +109,6 @@ Return ONLY a JSON object with these fields:
 - "hours": opening hours if known, otherwise "Check locally"
 - "reviews": array of 3 short realistic reviews someone might post online, each under 20 words
 
-Example:
-{{
-  "name": "LX Factory",
-  "description": "A repurposed industrial complex hosting independent shops, restaurants and a Sunday market. One of Lisbon's most creative spaces.",
-  "price": "Free entry, €10-20 for food",
-  "location": "Alcântara, near the 25 de Abril Bridge",
-  "hours": "Tuesday to Sunday, 12pm - midnight",
-  "reviews": [
-    "the sunday market here is absolutely worth waking up early for",
-    "best collection of independent shops in lisbon by far",
-    "go for brunch and stay for the afternoon, you won't regret it"
-  ]
-}}
-
 Return only the JSON object, nothing else."""
 
     data = {
@@ -119,6 +119,101 @@ Return only the JSON object, nothing else."""
     response = requests.post(url, headers=headers, json=data)
     result = response.json()
     return result["choices"][0]["message"]["content"]
+
+def build_itinerary(places, city):
+    url = "https://api.groq.com/openai/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    place_names = [p.name for p in places]
+    prompt = f"""You are a travel planner. Create a day-by-day itinerary for {city} using these places: {place_names}.
+
+Return ONLY a JSON array where each object is a day:
+- "day": day number
+- "title": short title for the day
+- "places": array of place names for that day
+- "tip": one practical tip for the day
+
+Example:
+[
+  {{
+    "day": 1,
+    "title": "Art and Culture",
+    "places": ["Van Abbemuseum", "Eindhoven Museum"],
+    "tip": "Start early at the museum to avoid crowds, grab lunch nearby."
+  }}
+]
+
+Spread the places across days logically. Return only the JSON array, nothing else."""
+
+    data = {
+        "model": "llama-3.3-70b-versatile",
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.7
+    }
+    response = requests.post(url, headers=headers, json=data)
+    result = response.json()
+    return result["choices"][0]["message"]["content"]
+
+# --- Routes ---
+
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+@app.route("/search", methods=["POST"])
+def search():
+    city = request.form.get("city")
+    mood = request.form.get("mood")
+    raw = search_reddit(city, mood)
+    recommendations_raw = ask_groq(raw, city, mood)
+    try:
+        recommendations = json.loads(recommendations_raw)
+    except:
+        recommendations = []
+    return render_template("results.html", city=city, mood=mood, recommendations=recommendations)
+
+@app.route("/save", methods=["POST"])
+@login_required
+def save_place():
+    name = request.form.get("name")
+    summary = request.form.get("summary")
+    score = request.form.get("score")
+    city = request.form.get("city")
+    place = SavedPlace(name=name, summary=summary, score=score, city=city, user_id=current_user.id)
+    db.session.add(place)
+    db.session.commit()
+    return {"status": "saved"}
+
+@app.route("/saved")
+@login_required
+def saved():
+    places = SavedPlace.query.filter_by(user_id=current_user.id).all()
+    return render_template("saved.html", places=places)
+
+@app.route("/saved/delete/<int:place_id>", methods=["POST"])
+@login_required
+def delete_place(place_id):
+    place = SavedPlace.query.get_or_404(place_id)
+    if place.user_id == current_user.id:
+        db.session.delete(place)
+        db.session.commit()
+    return redirect(url_for("saved"))
+
+@app.route("/itinerary")
+@login_required
+def itinerary():
+    places = SavedPlace.query.filter_by(user_id=current_user.id).all()
+    if not places:
+        return redirect(url_for("saved"))
+    city = places[0].city
+    itinerary_raw = build_itinerary(places, city)
+    try:
+        days = json.loads(itinerary_raw)
+    except:
+        days = []
+    return render_template("itinerary.html", days=days, city=city)
 
 @app.route("/place")
 def place():
@@ -131,5 +226,39 @@ def place():
         details = {"name": name, "description": "No details found.", "price": "Unknown", "location": "Unknown", "hours": "Unknown", "reviews": []}
     return render_template("place.html", details=details, city=city)
 
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+        if User.query.filter_by(username=username).first():
+            return render_template("register.html", error="Username already taken.")
+        user = User(username=username, password=generate_password_hash(password))
+        db.session.add(user)
+        db.session.commit()
+        login_user(user)
+        return redirect(url_for("index"))
+    return render_template("register.html")
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+        user = User.query.filter_by(username=username).first()
+        if user and check_password_hash(user.password, password):
+            login_user(user)
+            return redirect(url_for("index"))
+        return render_template("login.html", error="Invalid username or password.")
+    return render_template("login.html")
+
+@app.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for("index"))
+
 if __name__ == "__main__":
+    with app.app_context():
+        db.create_all()
     app.run(debug=True)

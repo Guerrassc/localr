@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Itinerary — Localr</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <a href="/saved" class="back">← Saved places</a>
+        <h1>{{ city }}</h1>
+        <p class="tagline">Your itinerary.</p>
+
+        {% if days %}
+        <div class="itinerary">
+            {% for day in days %}
+            <div class="day-card">
+                <div class="day-header">
+                    <span class="day-number">Day {{ day.day }}</span>
+                    <h2>{{ day.title }}</h2>
+                </div>
+                <ul class="place-list">
+                    {% for place in day.places %}
+                    <li>{{ place }}</li>
+                    {% endfor %}
+                </ul>
+                <p class="day-tip">{{ day.tip }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="color:#888">Couldn't generate an itinerary. Try saving more places first.</p>
+        {% endif %}
+
+        <a href="/" class="back" style="margin-top:32px; display:inline-block;">← New search</a>
+    </div>
+</body>
+</html>

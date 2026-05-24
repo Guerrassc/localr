@@ -55,14 +55,22 @@
         }
 
         function save() {
-            const card = cards[current];
-            saved.push({
-                name: card.querySelector('h2').textContent,
-                summary: card.querySelector('.summary').textContent,
-                score: card.querySelector('.score').textContent
-            });
-            next();
-        }
+    const card = cards[current];
+    const name = card.querySelector('h2').textContent;
+    const summary = card.querySelector('.summary').textContent;
+    const score = card.querySelector('.score').textContent;
+    const city = document.querySelector('h1').textContent;
+
+    fetch('/save', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: `name=${encodeURIComponent(name)}&summary=${encodeURIComponent(summary)}&score=${encodeURIComponent(score)}&city=${encodeURIComponent(city)}`
+    });
+
+    saved.push({ name, summary, score });
+    next();
+}
+        
 
         function skip() {
             next();

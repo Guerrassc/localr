@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saved — Localr</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back">← New search</a>
+        <h1>Saved places</h1>
+        <p class="tagline">Everything you've saved so far.</p>
+
+        {% if places %}
+        <div class="cards">
+            {% for place in places %}
+            <div class="card">
+                <div class="card-header">
+                    <h2>{{ place.name }}</h2>
+                    <span class="score">{{ place.score }}</span>
+                </div>
+                <p class="summary">{{ place.summary }}</p>
+                <div class="card-actions">
+                    <a href="/place?name={{ place.name }}&city={{ place.city }}" class="detail-link">View details →</a>
+                    <form action="/saved/delete/{{ place.id }}" method="POST">
+                        <button type="submit" class="delete-btn">Remove</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <a href="/itinerary" class="btn-itinerary">Generate itinerary →</a>
+
+        {% else %}
+        <p style="color:#888">Nothing saved yet. Go search a city and save some places.</p>
+        {% endif %}
+    </div>
+</body>
+</html>
