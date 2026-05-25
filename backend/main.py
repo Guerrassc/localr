@@ -28,6 +28,7 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
     saved_places = db.relationship("SavedPlace", backref="user", lazy=True)
+    skipped_places = db.relationship("SkippedPlace", backref="user", lazy=True)
 
 class SavedPlace(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -38,6 +39,15 @@ class SavedPlace(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     lat = db.Column(db.Float, nullable=True)
     lon = db.Column(db.Float, nullable=True)
+
+class SkippedPlace(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    summary = db.Column(db.Text, nullable=False)
+    score = db.Column(db.String(50), nullable=False)
+    city = db.Column(db.String(100), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -230,6 +240,17 @@ def save_place():
     summary = request.form.get("summary")
     score = request.form.get("score")
     city = request.form.get("city")
+    
+    # Check if already saved
+    existing = SavedPlace.query.filter_by(
+        user_id=current_user.id,
+        name=name,
+        city=city
+    ).first()
+    
+    if existing:
+        return {"status": "already_saved"}
+    
     coords = get_coordinates(name, city)
     place = SavedPlace(
         name=name,
@@ -266,9 +287,108 @@ def saved():
 def delete_place(place_id):
     place = db.session.get(SavedPlace, place_id)
     if place and place.user_id == current_user.id:
+        # Move to skipped instead of deleting
+        already_skipped = SkippedPlace.query.filter_by(
+            user_id=current_user.id, name=place.name, city=place.city
+        ).first()
+        if not already_skipped:
+            skipped = SkippedPlace(
+                name=place.name, summary=place.summary,
+                score=place.score, city=place.city,
+                user_id=current_user.id
+            )
+            db.session.add(skipped)
         db.session.delete(place)
         db.session.commit()
     return redirect(url_for("saved"))
+
+@app.route("/saved/delete-all", methods=["POST"])
+@login_required
+def delete_all_places():
+    places = SavedPlace.query.filter_by(user_id=current_user.id).all()
+    for place in places:
+        already_skipped = SkippedPlace.query.filter_by(
+            user_id=current_user.id, name=place.name, city=place.city
+        ).first()
+        if not already_skipped:
+            skipped = SkippedPlace(
+                name=place.name, summary=place.summary,
+                score=place.score, city=place.city,
+                user_id=current_user.id
+            )
+            db.session.add(skipped)
+        db.session.delete(place)
+    db.session.commit()
+    return redirect(url_for("saved"))
+
+@app.route("/skip", methods=["POST"])
+@login_required
+def skip_place():
+    name = request.form.get("name")
+    summary = request.form.get("summary")
+    score = request.form.get("score")
+    city = request.form.get("city")
+    existing = SkippedPlace.query.filter_by(
+        user_id=current_user.id, name=name, city=city
+    ).first()
+    if not existing:
+        place = SkippedPlace(
+            name=name, summary=summary, score=score,
+            city=city, user_id=current_user.id
+        )
+        db.session.add(place)
+        db.session.commit()
+    return {"status": "skipped"}
+
+@app.route("/unsave", methods=["POST"])
+@login_required
+def unsave_place():
+    name = request.form.get("name")
+    city = request.form.get("city")
+    place = SavedPlace.query.filter_by(
+        user_id=current_user.id, name=name, city=city
+    ).first()
+    if place:
+        db.session.delete(place)
+        db.session.commit()
+    return {"status": "removed"}
+
+@app.route("/skipped")
+@login_required
+def skipped():
+    places = SkippedPlace.query.filter_by(user_id=current_user.id).all()
+    return render_template("skipped.html", places=places)
+
+@app.route("/skipped/save/<int:place_id>", methods=["POST"])
+@login_required
+def save_from_skipped(place_id):
+    place = db.session.get(SkippedPlace, place_id)
+    if place and place.user_id == current_user.id:
+        already_saved = SavedPlace.query.filter_by(
+            user_id=current_user.id, name=place.name, city=place.city
+        ).first()
+        if not already_saved:
+            coords = get_coordinates(place.name, place.city)
+            saved = SavedPlace(
+                name=place.name, summary=place.summary,
+                score=place.score, city=place.city,
+                user_id=current_user.id,
+                lat=coords["lat"] if coords else None,
+                lon=coords["lon"] if coords else None
+            )
+            db.session.add(saved)
+        db.session.delete(place)
+        db.session.commit()
+    return redirect(url_for("skipped"))
+
+@app.route("/skipped/delete/<int:place_id>", methods=["POST"])
+@login_required
+def delete_skipped(place_id):
+    place = db.session.get(SkippedPlace, place_id)
+    if place and place.user_id == current_user.id:
+        db.session.delete(place)
+        db.session.commit()
+    return redirect(url_for("skipped"))
 
 @app.route("/itinerary")
 @login_required

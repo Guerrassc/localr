@@ -36,10 +36,17 @@
             {% endfor %}
         </div>
 
-        <a href="/itinerary" class="btn-itinerary">Generate itinerary →</a>
+<div class="saved-actions">
+            <a href="/itinerary" class="btn-itinerary">Generate itinerary →</a>
+            <a href="/skipped" class="btn-skipped">Skipped ({{ places|length }})</a>
+            <form action="/saved/delete-all" method="POST">
+                <button type="submit" class="delete-btn" onclick="return confirm('Move all saved places to skipped?')">Remove all</button>
+            </form>
+        </div>
 
         {% else %}
         <p style="color:#888">Nothing saved yet. Go search a city and save some places.</p>
+        <a href="/skipped" class="back" style="margin-top:16px; display:inline-block;">View skipped places</a>
         {% endif %}
     </div>
 

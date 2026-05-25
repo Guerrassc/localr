@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skipped — Localr</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <a href="/saved" class="back">← Saved places</a>
+        <h1>Skipped</h1>
+        <p class="tagline">Places you passed on. Save them if you changed your mind.</p>
+
+        {% if places %}
+        <div class="cards">
+            {% for place in places %}
+            <div class="card">
+                <div class="card-header">
+                    <h2>{{ place.name }}</h2>
+                    <span class="score">{{ place.score }}</span>
+                </div>
+                <p class="summary">{{ place.summary }}</p>
+                <p class="detail-link" style="color:#444; font-size:0.8rem;">{{ place.city }}</p>
+                <div class="card-actions">
+                    <form action="/skipped/save/{{ place.id }}" method="POST">
+                        <button type="submit" class="save-btn" style="padding: 8px 20px; font-size:0.85rem;">Save</button>
+                    </form>
+                    <form action="/skipped/delete/{{ place.id }}" method="POST">
+                        <button type="submit" class="delete-btn">Remove</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="color:#555">Nothing skipped yet.</p>
+        {% endif %}
+    </div>
+</body>
+</html>

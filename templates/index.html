@@ -8,34 +8,38 @@
 </head>
 <body>
     <div class="container">
-    <div class="nav">
-        <span></span>
-        <div class="nav-links">
-            {% if current_user.is_authenticated %}
-                <a href="/saved">Saved</a>
-                <a href="/logout">Log out</a>
-            {% else %}
-                <a href="/login">Log in</a>
-                <a href="/register">Register</a>
-            {% endif %}
+        <div class="nav">
+            <span></span>
+            <div class="nav-links">
+                {% if current_user.is_authenticated %}
+                    <a href="/saved">Saved</a>
+                    <a href="/skipped">Skipped</a>
+                    <a href="/logout">Log out</a>
+                {% else %}
+                    <a href="/login">Log in</a>
+                    <a href="/register">Register</a>
+                {% endif %}
+            </div>
         </div>
-    </div>
 
-    <h1>Localr</h1>
-    <p class="tagline">Real recommendations from real people.</p>
-        
-        <form action="/search" method="POST">
+        <div class="search-hero">
+            <p class="landing-eyebrow">No critics. No sponsored posts.</p>
+            <h1 class="search-title">Where are you going <span class="accent">?</span></h1>
+            <p class="search-sub">Pick a city and we'll find what locals actually love — sourced from real people, not reviewers.</p>
+        </div>
+
+        <form action="/search" method="POST" class="search-form">
             <div class="autocomplete-wrap">
-    <input 
-        type="text" 
-        name="city" 
-        id="city-input"
-        placeholder="Enter a city..." 
-        autocomplete="off"
-        required
-    />
-    <div id="autocomplete-list"></div>
-</div>
+                <input
+                    type="text"
+                    name="city"
+                    id="city-input"
+                    placeholder="Enter a city..."
+                    autocomplete="off"
+                    required
+                />
+                <div id="autocomplete-list"></div>
+            </div>
 
             <div class="mood-grid">
                 <label>
@@ -60,64 +64,101 @@
                 </label>
             </div>
 
-            <button type="submit">Find places</button>
+            <button type="submit" class="search-btn">Find places</button>
         </form>
+        </div>
+        <div id="loading-screen" style="display:none;">
+    <div class="loading-inner">
+        <p class="loading-city" id="loading-city"></p>
+        <h2 class="loading-title">Finding what locals love<span class="loading-dots"></span></h2>
+        <p class="loading-sub">Reading thousands of real posts and reviews.</p>
+        <div class="loading-bar-wrap">
+            <div class="loading-bar" id="loading-bar"></div>
+        </div>
     </div>
+    
+
+    </div>
+
     <script>
-    const cityInput = document.getElementById('city-input');
-    const list = document.getElementById('autocomplete-list');
-    let debounceTimer;
+        const cityInput = document.getElementById('city-input');
+        const list = document.getElementById('autocomplete-list');
+        let debounceTimer;
 
-    cityInput.addEventListener('input', () => {
-        clearTimeout(debounceTimer);
-        const query = cityInput.value.trim();
-        
-        if (query.length < 2) {
-            list.innerHTML = '';
-            list.style.display = 'none';
-            return;
-        }
+        cityInput.addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            const query = cityInput.value.trim();
 
-        debounceTimer = setTimeout(() => {
-            fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&featuretype=city`, {
-                headers: { 'Accept-Language': 'en' }
-            })
-            .then(r => r.json())
-            .then(data => {
+            if (query.length < 2) {
                 list.innerHTML = '';
-                if (data.length === 0) {
-                    list.style.display = 'none';
-                    return;
-                }
+                list.style.display = 'none';
+                return;
+            }
 
-                const seen = new Set();
-                data.forEach(place => {
-                    const display = place.display_name.split(',').slice(0, 3).join(',');
-                    if (seen.has(display)) return;
-                    seen.add(display);
-
-                    const item = document.createElement('div');
-                    item.className = 'autocomplete-item';
-                    item.textContent = display;
-                    item.addEventListener('click', () => {
-                        cityInput.value = place.display_name.split(',')[0];
-                        list.innerHTML = '';
+            debounceTimer = setTimeout(() => {
+                fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&featuretype=city`, {
+                    headers: { 'Accept-Language': 'en' }
+                })
+                .then(r => r.json())
+                .then(data => {
+                    list.innerHTML = '';
+                    if (data.length === 0) {
                         list.style.display = 'none';
-                    });
-                    list.appendChild(item);
-                });
+                        return;
+                    }
 
-                list.style.display = 'block';
-            });
+                    const seen = new Set();
+                    data.forEach(place => {
+                        const display = place.display_name.split(',').slice(0, 3).join(',');
+                        if (seen.has(display)) return;
+                        seen.add(display);
+
+                        const item = document.createElement('div');
+                        item.className = 'autocomplete-item';
+                        item.textContent = display;
+                        item.addEventListener('click', () => {
+                            cityInput.value = place.display_name.split(',')[0];
+                            list.innerHTML = '';
+                            list.style.display = 'none';
+                        });
+                        list.appendChild(item);
+                    });
+
+                    list.style.display = 'block';
+                });
+            }, 300);
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.autocomplete-wrap')) {
+                list.innerHTML = '';
+                list.style.display = 'none';
+            }
+        });
+        document.querySelector('form').addEventListener('submit', function(e) {
+        const city = document.getElementById('city-input').value;
+        const mood = document.querySelector('input[name="mood"]:checked');
+        if (!city || !mood) return;
+
+        document.querySelector('.container').style.opacity = '0';
+        document.querySelector('.container').style.transition = 'opacity 0.3s ease';
+
+        setTimeout(() => {
+            document.querySelector('.container').style.display = 'none';
+            const screen = document.getElementById('loading-screen');
+            screen.style.display = 'flex';
+            document.getElementById('loading-city').textContent = city;
+
+            let width = 0;
+            const bar = document.getElementById('loading-bar');
+            const interval = setInterval(() => {
+                width += Math.random() * 8;
+                if (width > 85) width = 85;
+                bar.style.width = width + '%';
+            }, 400);
         }, 300);
     });
 
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('.autocomplete-wrap')) {
-            list.innerHTML = '';
-            list.style.display = 'none';
-        }
-    });
-</script>
+    </script>
 </body>
 </html>
