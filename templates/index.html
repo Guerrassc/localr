@@ -25,12 +25,17 @@
     <p class="tagline">Real recommendations from real people.</p>
         
         <form action="/search" method="POST">
-            <input 
-                type="text" 
-                name="city" 
-                placeholder="Enter a city..." 
-                required
-            />
+            <div class="autocomplete-wrap">
+    <input 
+        type="text" 
+        name="city" 
+        id="city-input"
+        placeholder="Enter a city..." 
+        autocomplete="off"
+        required
+    />
+    <div id="autocomplete-list"></div>
+</div>
 
             <div class="mood-grid">
                 <label>
@@ -58,5 +63,61 @@
             <button type="submit">Find places</button>
         </form>
     </div>
+    <script>
+    const cityInput = document.getElementById('city-input');
+    const list = document.getElementById('autocomplete-list');
+    let debounceTimer;
+
+    cityInput.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        const query = cityInput.value.trim();
+        
+        if (query.length < 2) {
+            list.innerHTML = '';
+            list.style.display = 'none';
+            return;
+        }
+
+        debounceTimer = setTimeout(() => {
+            fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&featuretype=city`, {
+                headers: { 'Accept-Language': 'en' }
+            })
+            .then(r => r.json())
+            .then(data => {
+                list.innerHTML = '';
+                if (data.length === 0) {
+                    list.style.display = 'none';
+                    return;
+                }
+
+                const seen = new Set();
+                data.forEach(place => {
+                    const display = place.display_name.split(',').slice(0, 3).join(',');
+                    if (seen.has(display)) return;
+                    seen.add(display);
+
+                    const item = document.createElement('div');
+                    item.className = 'autocomplete-item';
+                    item.textContent = display;
+                    item.addEventListener('click', () => {
+                        cityInput.value = place.display_name.split(',')[0];
+                        list.innerHTML = '';
+                        list.style.display = 'none';
+                    });
+                    list.appendChild(item);
+                });
+
+                list.style.display = 'block';
+            });
+        }, 300);
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.autocomplete-wrap')) {
+            list.innerHTML = '';
+            list.style.display = 'none';
+        }
+    });
+</script>
 </body>
 </html>

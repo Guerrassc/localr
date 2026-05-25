@@ -220,10 +220,14 @@
             }
         }
 
-        function collapseCard() {
-            document.getElementById('expanded-card').classList.remove('open');
-            document.getElementById('expand-overlay').classList.remove('open');
-        }
+        let swipeLocked = false;
+
+    function collapseCard() {
+    document.getElementById('expanded-card').classList.remove('open');
+    document.getElementById('expand-overlay').classList.remove('open');
+    swipeLocked = true;
+    setTimeout(() => { swipeLocked = false; }, 500);
+}
 
         function collapseAndSave() {
             collapseCard();
@@ -245,40 +249,68 @@
         const hammer = new Hammer(wrap);
         hammer.get('pan').set({ direction: Hammer.DIRECTION_HORIZONTAL });
         hammer.get('swipe').set({ direction: Hammer.DIRECTION_HORIZONTAL, threshold: 10, velocity: 0.3 });
+        let swiping = false;
+let swipeHandled = false;
 
-        hammer.on('swiperight', () => { dragging = false; animateAndSave(); });
-        hammer.on('swipeleft', () => { dragging = false; animateAndSkip(); });
+hammer.on('swiperight', () => {
+    if (swipeLocked || swiping) return;
+    swipeHandled = true;
+    swiping = true;
+    dragging = false;
+    animateAndSave();
+    setTimeout(() => { swiping = false; }, 600);
+});
 
-        hammer.on('panstart', () => { dragging = true; });
-        hammer.on('pan', (e) => {
-            const card = cards[current];
-            if (!card) return;
-            card.style.transition = 'none';
-            card.style.transform = `translateX(${e.deltaX}px) rotate(${e.deltaX * 0.05}deg)`;
-            if (e.deltaX > 0) {
-                card.querySelector('.hint-save').style.opacity = Math.min(e.deltaX / 100, 1);
-                card.querySelector('.hint-skip').style.opacity = 0;
-            } else {
-                card.querySelector('.hint-skip').style.opacity = Math.min(-e.deltaX / 100, 1);
-                card.querySelector('.hint-save').style.opacity = 0;
-            }
-        });
+hammer.on('swipeleft', () => {
+    if (swipeLocked || swiping) return;
+    swipeHandled = true;
+    swiping = true;
+    dragging = false;
+    animateAndSkip();
+    setTimeout(() => { swiping = false; }, 600);
+});
 
-        hammer.on('panend', (e) => {
-            const card = cards[current];
-            if (!card) return;
-            card.querySelector('.hint-save').style.opacity = 0;
-            card.querySelector('.hint-skip').style.opacity = 0;
-            if (e.deltaX > 100) {
-                animateAndSave();
-            } else if (e.deltaX < -100) {
-                animateAndSkip();
-            } else {
-                card.style.transition = 'transform 0.3s ease';
-                card.style.transform = '';
-            }
-            setTimeout(() => { dragging = false; }, 100);
-        });
+hammer.on('panstart', () => {
+    if (swipeLocked) return;
+    dragging = true;
+    swipeHandled = false;
+});
+
+hammer.on('pan', (e) => {
+    if (swipeLocked || swiping) return;
+    const card = cards[current];
+    if (!card) return;
+    card.style.transition = 'none';
+    card.style.transform = `translateX(${e.deltaX}px) rotate(${e.deltaX * 0.05}deg)`;
+    if (e.deltaX > 0) {
+        card.querySelector('.hint-save').style.opacity = Math.min(e.deltaX / 100, 1);
+        card.querySelector('.hint-skip').style.opacity = 0;
+    } else {
+        card.querySelector('.hint-skip').style.opacity = Math.min(-e.deltaX / 100, 1);
+        card.querySelector('.hint-save').style.opacity = 0;
+    }
+});
+
+hammer.on('panend', (e) => {
+    if (swipeLocked || swiping || swipeHandled) return;
+    const card = cards[current];
+    if (!card) return;
+    card.querySelector('.hint-save').style.opacity = 0;
+    card.querySelector('.hint-skip').style.opacity = 0;
+    if (e.deltaX > 100) {
+        swiping = true;
+        animateAndSave();
+        setTimeout(() => { swiping = false; }, 600);
+    } else if (e.deltaX < -100) {
+        swiping = true;
+        animateAndSkip();
+        setTimeout(() => { swiping = false; }, 600);
+    } else {
+        card.style.transition = 'transform 0.3s ease';
+        card.style.transform = '';
+    }
+    setTimeout(() => { dragging = false; swipeHandled = false; }, 100);
+});
 
         const expandEl = document.getElementById('expanded-card');
         const expandHammer = new Hammer(expandEl);

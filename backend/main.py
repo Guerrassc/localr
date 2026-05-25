@@ -36,6 +36,8 @@ class SavedPlace(db.Model):
     score = db.Column(db.String(50), nullable=False)
     city = db.Column(db.String(100), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    lat = db.Column(db.Float, nullable=True)
+    lon = db.Column(db.Float, nullable=True)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -160,27 +162,24 @@ def get_place_images(name, city):
     UNSPLASH_ACCESS_KEY = os.getenv("UNSPLASH_ACCESS_KEY")
     url = "https://api.unsplash.com/search/photos"
     headers = {"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"}
-    
-    # Try specific place name first
+
     params = {"query": name, "per_page": 5, "orientation": "landscape"}
     response = requests.get(url, headers=headers, params=params)
     data = response.json()
     results = data.get("results", [])
-    
-    # If less than 2 results, try place + city
+
     if len(results) < 2:
         params["query"] = f"{name} {city}"
         response = requests.get(url, headers=headers, params=params)
         data = response.json()
         results = data.get("results", [])
-    
-    # If still nothing, fall back to city travel photos
+
     if len(results) < 2:
         params["query"] = f"{city} travel food restaurant"
         response = requests.get(url, headers=headers, params=params)
         data = response.json()
         results = data.get("results", [])
-    
+
     images = []
     for photo in results[:5]:
         images.append({
@@ -231,7 +230,16 @@ def save_place():
     summary = request.form.get("summary")
     score = request.form.get("score")
     city = request.form.get("city")
-    place = SavedPlace(name=name, summary=summary, score=score, city=city, user_id=current_user.id)
+    coords = get_coordinates(name, city)
+    place = SavedPlace(
+        name=name,
+        summary=summary,
+        score=score,
+        city=city,
+        user_id=current_user.id,
+        lat=coords["lat"] if coords else None,
+        lon=coords["lon"] if coords else None
+    )
     db.session.add(place)
     db.session.commit()
     return {"status": "saved"}
@@ -242,17 +250,25 @@ def saved():
     places = SavedPlace.query.filter_by(user_id=current_user.id).all()
     places_with_coords = []
     for place in places:
-        coords = get_coordinates(place.name, place.city)
         places_with_coords.append({
             "id": place.id,
             "name": place.name,
             "summary": place.summary,
             "score": place.score,
             "city": place.city,
-            "lat": coords["lat"] if coords else None,
-            "lon": coords["lon"] if coords else None
+            "lat": place.lat,
+            "lon": place.lon
         })
     return render_template("saved.html", places=places_with_coords)
+
+@app.route("/saved/delete/<int:place_id>", methods=["POST"])
+@login_required
+def delete_place(place_id):
+    place = db.session.get(SavedPlace, place_id)
+    if place and place.user_id == current_user.id:
+        db.session.delete(place)
+        db.session.commit()
+    return redirect(url_for("saved"))
 
 @app.route("/itinerary")
 @login_required
