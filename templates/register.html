@@ -8,49 +8,13 @@
 </head>
 <body class="landing-body">
 
-    <!-- Same floating cards -->
-    <div class="floating-cards">
-        <div class="float-card fc1">
-            <div class="fc-top">
-                <span class="fc-name">Taberna da Rua das Flores</span>
-                <span class="fc-score">487 mentions</span>
-            </div>
-            <p class="fc-summary">A tiny wine bar locals have been keeping secret for years.</p>
-            <p class="fc-quote">"skip the tourist spots, this is the real lisbon"</p>
-        </div>
-        <div class="float-card fc2">
-            <div class="fc-top">
-                <span class="fc-name">Miradouro da Graça</span>
-                <span class="fc-score">312 mentions</span>
-            </div>
-            <p class="fc-summary">The viewpoint the guidebooks forgot to mention.</p>
-            <p class="fc-quote">"better than Alfama and nobody is there"</p>
-        </div>
-        <div class="float-card fc3">
-            <div class="fc-top">
-                <span class="fc-name">Mercado de Arroios</span>
-                <span class="fc-score">219 mentions</span>
-            </div>
-            <p class="fc-summary">The market where Lisbon actually shops for lunch.</p>
-            <p class="fc-quote">"cheapest and most authentic food in the city"</p>
-        </div>
-        <div class="float-card fc4">
-            <div class="fc-top">
-                <span class="fc-name">LX Factory Sunday Market</span>
-                <span class="fc-score">401 mentions</span>
-            </div>
-            <p class="fc-summary">A repurposed factory that comes alive every Sunday.</p>
-            <p class="fc-quote">"go on sunday, trust me, just go"</p>
-        </div>
-    </div>
-
     <div class="landing-overlay"></div>
 
     <div class="landing-center">
         <div class="landing-hero">
             <p class="landing-eyebrow">Free. No credit card.</p>
-            <h1 class="landing-title">Start finding<br><span class="accent">real</span> places.</h1>
-            <p class="landing-sub">Join thousands of travelers who stopped trusting critics and started trusting the crowd.</p>
+            <h1 class="landing-title">Start finding<br><span class="accent">hidden gems</span>.</h1>
+            <p class="landing-sub">Create an account to save places and build itineraries. Use a password of at least 10 characters.</p>
         </div>
 
         <div class="landing-form-wrap">
@@ -59,28 +23,14 @@
             {% endif %}
 
             <form action="/register" method="POST" class="landing-form">
-                <input type="text" name="username" placeholder="Choose a username" required />
-                <input type="password" name="password" placeholder="Create a password" required />
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="text" name="username" placeholder="Choose a username" minlength="3" maxlength="32" pattern="[A-Za-z0-9_.\-]+" autocomplete="username" required />
+                <input type="password" name="password" placeholder="Create a password (10+ characters)" minlength="10" maxlength="128" autocomplete="new-password" required />
                 <button type="submit">Create free account</button>
             </form>
 
             <p class="landing-register">Already have an account? <a href="/login">Log in</a></p>
-
-            <div class="landing-stats">
-                <div class="stat">
-                    <span class="stat-num">10,000+</span>
-                    <span class="stat-label">Hidden gems found</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-num">80+</span>
-                    <span class="stat-label">Cities covered</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-num">0</span>
-                    <span class="stat-label">Paid reviews</span>
-                </div>
-            </div>
-        </div>
+</div>
     </div>
 
 </body>

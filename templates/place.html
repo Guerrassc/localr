@@ -19,7 +19,7 @@
 
                 <div class="detail-meta">
                     <div class="meta-item">
-                        <span class="meta-label">Price</span>
+                        <span class="meta-label">Price (estimate)</span>
                         <span class="meta-value">{{ details.price }}</span>
                     </div>
                     <div class="meta-item">
@@ -33,11 +33,12 @@
                 </div>
             </div>
 
-            <div class="reviews-section">
-                <h2>What people are saying</h2>
-                {% for review in details.reviews %}
-                <blockquote class="review">"{{ review }}"</blockquote>
+            <div class="tips-section">
+                <h2>Good to know</h2>
+                {% for tip in details.tips %}
+                <p class="tip">{{ tip }}</p>
                 {% endfor %}
+                <p class="ai-note">AI-generated information. Prices and hours are estimates, so verify them before you go.</p>
             </div>
         </div>
     </div>

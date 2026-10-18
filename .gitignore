@@ -1,5 +1,12 @@
 __pycache__/
 *.pyc
 .env
+.env.*
+!.env.example
 venv/
+.venv/
 .DS_Store
+# databases hold user data: never commit them
+*.db
+*.sqlite3
+instance/

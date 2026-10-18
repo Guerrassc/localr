@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ city }} — Localr</title>
     <link rel="stylesheet" href="/static/style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
@@ -11,7 +12,7 @@
     <div class="container">
         <a href="/" class="back">← New search</a>
         <h1 data-mood="{{ mood }}">{{ city }}</h1>
-        <p class="tagline">{{ mood }} picks from the community</p>
+        <p class="tagline">{{ mood }} ideas, AI-generated. Double-check opening hours and details before you go.</p>
 
         <div id="swipe-section">
             <div id="card-wrap">
@@ -19,10 +20,9 @@
                 <div class="card swipe-card" data-index="{{ loop.index0 }}" data-name="{{ place.name }}" style="display:none;">
                     <div class="card-header">
                         <h2>{{ place.name }}</h2>
-                        <span class="score">{{ place.score }} mentions</span>
                     </div>
                     <p class="summary">{{ place.summary }}</p>
-                    <blockquote>"{{ place.quote }}"</blockquote>
+                    {% if place.tip %}<p class="tip">Tip: {{ place.tip }}</p>{% endif %}
                     <p class="tap-hint">Tap card for details</p>
                     <div class="swipe-hint">
                         <span class="hint-skip">← Skip</span>
@@ -107,36 +107,41 @@
     function animateAndSave() { animateOut('right', save); }
     function animateAndSkip() { animateOut('left', skip); }
 
-    function save() {
-        const card = cards[current];
-        const name = card.querySelector('h2').textContent;
-        const summary = card.querySelector('.summary').textContent;
-        const score = card.querySelector('.score').textContent;
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 
-        fetch('/save', {
+    // Every POST carries the CSRF token in a header; the server rejects it otherwise.
+    function post(url, params) {
+        return fetch(url, {
             method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: `name=${encodeURIComponent(name)}&summary=${encodeURIComponent(summary)}&score=${encodeURIComponent(score)}&city=${encodeURIComponent(cityName)}`
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': csrfToken
+            },
+            body: new URLSearchParams(params).toString()
         });
+    }
 
-        saved.push({ name, summary, score, index: current, wasSaved: true });
+    function cardData(card) {
+        const tipEl = card.querySelector('.tip');
+        return {
+            name: card.querySelector('h2').textContent,
+            summary: card.querySelector('.summary').textContent,
+            tip: tipEl ? tipEl.textContent.replace(/^Tip: /, '') : '',
+            city: cityName
+        };
+    }
+
+    function save() {
+        const data = cardData(cards[current]);
+        post('/save', data);
+        saved.push({ name: data.name, summary: data.summary, index: current, wasSaved: true });
         next();
     }
 
     function skip() {
-    const card = cards[current];
-    const name = card.querySelector('h2').textContent;
-    const summary = card.querySelector('.summary').textContent;
-    const score = card.querySelector('.score').textContent;
-
-    fetch('/skip', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: `name=${encodeURIComponent(name)}&summary=${encodeURIComponent(summary)}&score=${encodeURIComponent(score)}&city=${encodeURIComponent(cityName)}`
-    });
-
-    next();
-}
+        post('/skip', cardData(cards[current]));
+        next();
+    }
 
     function next() {
         history.push(current);
@@ -155,11 +160,7 @@
         const lastAction = saved[saved.length - 1];
         if (lastAction && lastAction.index === history[history.length - 1] && lastAction.wasSaved) {
             saved.pop();
-            fetch('/unsave', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body: `name=${encodeURIComponent(lastAction.name)}&city=${encodeURIComponent(cityName)}`
-            });
+            post('/unsave', { name: lastAction.name, city: cityName });
         } else if (lastAction && lastAction.index === history[history.length - 1]) {
             saved.pop();
         }
@@ -230,7 +231,7 @@
                         const parser = new DOMParser();
                         const doc = parser.parseFromString(html, 'text/html');
                         const details = doc.querySelector('.detail-card');
-                        const reviews = doc.querySelector('.reviews-section');
+                        const reviews = doc.querySelector('.tips-section');
                         detailsCache[name] = { details, reviews };
                         const content = document.getElementById('expand-content');
                         content.innerHTML = '';
@@ -254,10 +255,25 @@
     }
 
     function updateCredit(index) {
-        if (galleryImages[index]) {
-            document.getElementById('expand-credit').innerHTML =
-                `Photo by <a href="${galleryImages[index].credit_link}?utm_source=localr&utm_medium=referral" target="_blank">${galleryImages[index].credit}</a> on <a href="https://unsplash.com?utm_source=localr&utm_medium=referral" target="_blank">Unsplash</a>`;
+        const el = document.getElementById('expand-credit');
+        el.textContent = '';
+        const img = galleryImages[index];
+        if (!img) return;
+        const link = (href, text) => {
+            const a = document.createElement('a');
+            a.href = href;
+            a.textContent = text;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            return a;
+        };
+        el.append('Photo by ');
+        if (img.credit_link) {
+            el.append(link(img.credit_link + '?utm_source=localr&utm_medium=referral', img.credit));
+        } else {
+            el.append(img.credit);
         }
+        el.append(' on ', link('https://unsplash.com?utm_source=localr&utm_medium=referral', 'Unsplash'));
     }
 
     let swipeLocked = false;
@@ -367,23 +383,30 @@
         const actualSaved = saved.filter(p => p.wasSaved);
 
         if (actualSaved.length === 0) {
-            list.innerHTML = '<p style="color:#888">You skipped everything. Try a different city or mood.</p>';
+            const p = document.createElement('p');
+            p.style.color = '#888';
+            p.textContent = 'You skipped everything. Try a different city or mood.';
+            list.appendChild(p);
             return;
         }
 
+        // Build with DOM APIs + textContent. Using innerHTML here would turn any
+        // "<...>" in an AI-generated name or summary into live HTML (DOM XSS).
+        const make = (tag, cls, text) => {
+            const e = document.createElement(tag);
+            if (cls) e.className = cls;
+            if (text !== undefined) e.textContent = text;
+            return e;
+        };
         actualSaved.forEach(place => {
-            list.innerHTML += `
-                <a href="/place?name=${encodeURIComponent(place.name)}&city=${encodeURIComponent(cityName)}" class="card-link">
-                    <div class="card">
-                        <div class="card-header">
-                            <h2>${place.name}</h2>
-                            <span class="score">${place.score}</span>
-                        </div>
-                        <p class="summary">${place.summary}</p>
-                        <span class="detail-link">View details →</span>
-                    </div>
-                </a>
-            `;
+            const a = make('a', 'card-link');
+            a.href = `/place?name=${encodeURIComponent(place.name)}&city=${encodeURIComponent(cityName)}`;
+            const card = make('div', 'card');
+            const header = make('div', 'card-header');
+            header.appendChild(make('h2', '', place.name));
+            card.append(header, make('p', 'summary', place.summary), make('span', 'detail-link', 'View details →'));
+            a.appendChild(card);
+            list.appendChild(a);
         });
     }
 

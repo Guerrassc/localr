@@ -23,12 +23,14 @@
             <div class="card">
                 <div class="card-header">
                     <h2>{{ place.name }}</h2>
-                    <span class="score">{{ place.score }}</span>
+                    
                 </div>
                 <p class="summary">{{ place.summary }}</p>
+                {% if place.tip %}<p class="tip">Tip: {{ place.tip }}</p>{% endif %}
                 <div class="card-actions">
-                    <a href="/place?name={{ place.name }}&city={{ place.city }}" class="detail-link">View details →</a>
+                    <a href="/place?name={{ place.name|urlencode }}&city={{ place.city|urlencode }}" class="detail-link">View details →</a>
                     <form action="/saved/delete/{{ place.id }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="delete-btn">Remove</button>
                     </form>
                 </div>
@@ -38,8 +40,9 @@
 
 <div class="saved-actions">
             <a href="/itinerary" class="btn-itinerary">Generate itinerary →</a>
-            <a href="/skipped" class="btn-skipped">Skipped ({{ places|length }})</a>
+            <a href="/skipped" class="btn-skipped">Skipped ({{ skipped_count }})</a>
             <form action="/saved/delete-all" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="delete-btn" onclick="return confirm('Move all saved places to skipped?')">Remove all</button>
             </form>
         </div>
@@ -72,10 +75,15 @@
                     fillOpacity: 0.9
                 }).addTo(map);
 
-                marker.bindPopup(`
-                    <strong>${place.name}</strong><br>
-                    <span style="color:#888;font-size:0.85rem">${place.summary}</span>
-                `);
+                // Leaflet treats a string as HTML, so pass a DOM node built with textContent.
+                const popup = document.createElement('div');
+                const title = document.createElement('strong');
+                title.textContent = place.name;
+                const desc = document.createElement('span');
+                desc.style.cssText = 'color:#888;font-size:0.85rem';
+                desc.textContent = place.summary;
+                popup.append(title, document.createElement('br'), desc);
+                marker.bindPopup(popup);
             });
 
             if (validPlaces.length > 1) {

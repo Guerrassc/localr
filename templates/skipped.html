@@ -18,15 +18,17 @@
             <div class="card">
                 <div class="card-header">
                     <h2>{{ place.name }}</h2>
-                    <span class="score">{{ place.score }}</span>
+                    
                 </div>
                 <p class="summary">{{ place.summary }}</p>
                 <p class="detail-link" style="color:#444; font-size:0.8rem;">{{ place.city }}</p>
                 <div class="card-actions">
                     <form action="/skipped/save/{{ place.id }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="save-btn" style="padding: 8px 20px; font-size:0.85rem;">Save</button>
                     </form>
                     <form action="/skipped/delete/{{ place.id }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="delete-btn">Remove</button>
                     </form>
                 </div>

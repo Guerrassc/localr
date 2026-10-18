@@ -3,46 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Localr — Find what locals actually love</title>
+    <title>Localr — AI-generated ideas for your next trip</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body class="landing-body">
-
-    <!-- Floating cards in background -->
-    <div class="floating-cards">
-        <div class="float-card fc1">
-            <div class="fc-top">
-                <span class="fc-name">Taberna da Rua das Flores</span>
-                <span class="fc-score">487 mentions</span>
-            </div>
-            <p class="fc-summary">A tiny wine bar locals have been keeping secret for years.</p>
-            <p class="fc-quote">"skip the tourist spots, this is the real lisbon"</p>
-        </div>
-        <div class="float-card fc2">
-            <div class="fc-top">
-                <span class="fc-name">Miradouro da Graça</span>
-                <span class="fc-score">312 mentions</span>
-            </div>
-            <p class="fc-summary">The viewpoint the guidebooks forgot to mention.</p>
-            <p class="fc-quote">"better than Alfama and nobody is there"</p>
-        </div>
-        <div class="float-card fc3">
-            <div class="fc-top">
-                <span class="fc-name">Mercado de Arroios</span>
-                <span class="fc-score">219 mentions</span>
-            </div>
-            <p class="fc-summary">The market where Lisbon actually shops for lunch.</p>
-            <p class="fc-quote">"cheapest and most authentic food in the city"</p>
-        </div>
-        <div class="float-card fc4">
-            <div class="fc-top">
-                <span class="fc-name">LX Factory Sunday Market</span>
-                <span class="fc-score">401 mentions</span>
-            </div>
-            <p class="fc-summary">A repurposed factory that comes alive every Sunday.</p>
-            <p class="fc-quote">"go on sunday, trust me, just go"</p>
-        </div>
-    </div>
 
     <!-- Overlay -->
     <div class="landing-overlay"></div>
@@ -50,9 +14,9 @@
     <!-- Main content -->
     <div class="landing-center">
         <div class="landing-hero">
-            <p class="landing-eyebrow">No critics. No sponsored posts.</p>
-            <h1 class="landing-title">Find what<br><span class="accent">locals</span> actually love.</h1>
-            <p class="landing-sub">Localr reads thousands of real posts from real travelers and surfaces the places professionals never review.</p>
+            <p class="landing-eyebrow">AI-generated ideas for your next trip</p>
+            <h1 class="landing-title">Find your next<br><span class="accent">hidden gem</span>.</h1>
+            <p class="landing-sub">Pick a city and a mood. Localr asks an AI model for ideas and lets you swipe through them. Suggestions are AI-generated, so verify details before you go.</p>
         </div>
 
         <div class="landing-form-wrap">
@@ -61,28 +25,14 @@
             {% endif %}
 
             <form action="/login" method="POST" class="landing-form">
-                <input type="text" name="username" placeholder="Username" required />
-                <input type="password" name="password" placeholder="Password" required />
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="text" name="username" placeholder="Username" maxlength="32" autocomplete="username" required />
+                <input type="password" name="password" placeholder="Password" maxlength="128" autocomplete="current-password" required />
                 <button type="submit">Get started</button>
             </form>
 
             <p class="landing-register">New here? <a href="/register">Create a free account</a></p>
-
-            <div class="landing-stats">
-                <div class="stat">
-                    <span class="stat-num">10,000+</span>
-                    <span class="stat-label">Hidden gems found</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-num">80+</span>
-                    <span class="stat-label">Cities covered</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-num">0</span>
-                    <span class="stat-label">Paid reviews</span>
-                </div>
-            </div>
-        </div>
+</div>
     </div>
 
 </body>

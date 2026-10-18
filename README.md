@@ -2,7 +2,7 @@
 
 A travel-idea app: pick a city and a mood, swipe through ten AI-generated suggestions, save the ones you like, and turn them into a day-by-day itinerary.
 
-> **Honesty note.** Suggestions come from a large language model (Llama 3.3 via Groq), not from Reddit, reviews or any scraped source. They can be wrong or out of date, and the app says so in the UI. Earlier versions of this project claimed to read Reddit and showed "real quotes" and a "Local Score"; that was not true, and it has been removed. Reddit's official API is approval-gated and its public access is being wound down in 2026, so it is not a viable source for a new hobby project. This is a fun project idea.
+> **Honesty note.** Suggestions come from a large language model (Llama 3.3 via Groq), not from Reddit, reviews or any scraped source. They can be wrong or out of date, and the app says so in the UI. Earlier versions of this project claimed to read Reddit and showed "real quotes" and a "Local Score"; that was not true, and it has been removed. Reddit's official API is approval-gated and its public access is being wound down in 2026, so it is not a viable source for a new hobby project.
 
 ## Features
 
