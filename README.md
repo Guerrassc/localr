@@ -1,70 +1,41 @@
 # Localr
 
-A travel app that surfaces hidden gem activities by reading what real people say on Reddit, Quora, and other community platforms, not what paid reviewers or sponsored listicles want you to see.
+A travel-idea app: pick a city and a mood, swipe through ten AI-generated suggestions, save the ones you like, and turn them into a day-by-day itinerary.
 
----
-
-## The idea
-
-Every time I tried to find something cool to do in a new city, I'd end up on TripAdvisor looking at the same 10 tourist traps. The good stuff was always buried in a Reddit thread from 3 years ago that took 45 minutes to find.
-
-Localr automates that. You pick a city and a vibe, and the app does the digging for you.
-
----
-
-## How it works
-
-1. Enter a destination city
-2. Pick a mood, Outdoor, Food & Drink, Culture, Nightlife, or Budget
-3. The app scans Reddit and community platforms for real recommendations
-4. Activities come up as swipeable cards, right to save, left to skip
-5. Each card shows a real quote from an actual post, plus a **Local Score** (how many times a place was organically mentioned)
-6. Saved activities can be turned into a day-by-day itinerary
-
----
+> **Honesty note.** Suggestions come from a large language model (Llama 3.3 via Groq), not from Reddit, reviews or any scraped source. They can be wrong or out of date, and the app says so in the UI. Earlier versions of this project claimed to read Reddit and showed "real quotes" and a "Local Score"; that was not true, and it has been removed. Reddit's official API is approval-gated and its public access is being wound down in 2026, so it is not a viable source for a new hobby project.
 
 ## Features
 
-- **Human-first sourcing** — every recommendation comes from a real person, not a paid critic
-- **Local Score** — a trust metric based on organic mentions across platforms
-- **Mood mode** — filters recommendations by the kind of experience you're after
-- **Swipe interface** — fast, fun, feels like browsing should
-- **Real quotes on cards** — you always know where a recommendation came from
-- **Itinerary builder** — turns your saved spots into an actual plan
-
----
+- City + mood search (mood is restricted to a fixed list)
+- Swipe cards: right to save, left to skip, with undo
+- Place detail panel with photos (Unsplash) and AI-generated practical tips
+- Saved places on a map (OpenStreetMap / Leaflet)
+- Itinerary builder
+- Accounts with hashed passwords
 
 ## Tech stack
 
-- Frontend: HTML, CSS, JavaScript (moving to React later)
-- Backend: Python + Flask
-- AI: Claude API for summarization and extraction
-- Data: Reddit API, Quora, Google Places API
-- Database: SQLite
-- Auth: Flask-Login
+Python, Flask, Flask-Login, Flask-SQLAlchemy (SQLite), Groq API (LLM), Unsplash API, Nominatim (geocoding), vanilla JavaScript.
 
----
+## Run it locally
 
-## Build phases
+```bash
+python -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env        # then fill in the values
+# generate a SECRET_KEY:  python -c "import secrets; print(secrets.token_hex(32))"
+# for plain-http local dev add SESSION_COOKIE_SECURE=0 to .env
+flask --app backend/main run
+```
 
-| Phase | Goal |
-|-------|------|
-| 1 — AI engine | Terminal only. Prove the core idea works |
-| 2 — Web interface | Flask site with search and card results |
-| 3 — Swipe mechanic | Right/left swiping, save to a list |
-| 4 — Detail pages | Full activity info, raw reviews, Local Score |
-| 5 — Accounts + itinerary | Login, saved activities, day-by-day plan |
+The app refuses to start without a `SECRET_KEY`.
 
-Currently on: **Phase 1**
+## Tests
 
----
+```bash
+python -m unittest tests.test_security -v
+```
 
-## Status
+## Security
 
-Just getting started. Following the build from scratch, documenting everything as I go.
-
----
-
-## Why "Localr"
-
-Short for local recommender. The missing e is intentional, Tumblr, Flickr, inspiration.
+See [SECURITY.md](SECURITY.md) for what was found, what was fixed, and what is still open.
